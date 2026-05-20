@@ -46,9 +46,9 @@ Phase 7  最终报告
 5. **书的笔记目录名**：按 **`<原书主标题>-<作者姓>`** 命名规则推断。规则：
    - 用原书主标题（去掉副标题如 `: Researching, Interviewing, Writing`，去掉冠词 `The/A`，但 `The` 是书名核心一部分时保留）
    - 用 `-` 连接作者姓（last name 或中文姓）
-   - 原书是英文 → 用英文（`Working-Caro`、`Power-Broker-Caro`）
+   - 原书是英文 → 用英文（`Moby-Dick-Melville`、`War-and-Peace-Tolstoy`）
    - 原书是中文 → 用中文（`活着-余华`、`人类简史-Harari`）
-   - 多字标题用下划线或保留空格替成 `-`（`Path-of-Power-Caro`）
+   - 多字标题用下划线或保留空格替成 `-`（`Brothers-Karamazov-Dostoyevsky`）
 6. **章节笔记详略**：仅参考用（叙事长度由内容决定，不卡字数）
 7. **线 A 并行度**：默认 8
 
@@ -198,7 +198,7 @@ created: YYYY-MM-DD
 
 PDF 自带 outline 里有时**两个层级混在一起**——L1 是章节，L2 是子节；或者 L1 是 part 扉页（如 "ROBERT MOSES"、"INTERVIEWING"），L2 才是真正的章节。
 
-**Caro 的 *Working* 是典型例子**：原书有 4 个 part 扉页（ROBERT MOSES / LYNDON JOHNSON / INTERVIEWING / THE PARIS REVIEW INTERVIEW）。它们**只有标题，没有正文**——是 part divider，不是章节。如果当章节处理，会产生 4 个 0KB 的"假章节"，挤占真章节的编号。
+**典型例子**：*War and Peace* 有 4 个 Volume + 1 Epilogue，每个 Volume 下面是 parts，parts 下面才是 chapters。Volume/Part 扉页**只有标题，没有正文**——它们是 dividers，不是章节。如果当章节处理，会产生若干 0KB 的"假章节"，挤占真章节的编号。许多自传体非虚构（按"Part I / Part II"组织成几大板块的）也是同样模式。
 
 **正确做法**：
 
@@ -206,16 +206,16 @@ PDF 自带 outline 里有时**两个层级混在一起**——L1 是章节，L2 
 2. **Part 用平级文件**（不要文件夹——Obsidian 默认把文件夹聚到顶端）。文件名 `第N部_<slug>.md`，N = part 在书里的顺序（1, 2, 3, 4…）
 3. 真章节用 `第NN章_<slug>.md`，NN = 章节号（两位数），连续不跳号
 4. **所有文件加阅读顺序数字前缀 `NN_`**：从 `01_` 开始按阅读顺序递增。这是**最可靠的排序方式**——不依赖 Unicode 字典序的巧合。例如：
-   - `04_第00章_引言.md`
-   - `05_第01章_翻遍每一页.md`
-   - `06_第1部_罗伯特·摩西.md`  ← part 扉页
-   - `07_第02章_城市塑造者.md`
-   - `08_第03章_碳足迹.md`
-   - `09_第04章_作家的圣所.md`
-   - `10_第2部_林登·约翰逊.md`
+   - `04_第00章_前言.md`
+   - `05_第01章_<章节标题>.md`
+   - `06_第1部_<部标题>.md`  ← part 扉页
+   - `07_第02章_<章节标题>.md`
+   - `08_第03章_<章节标题>.md`
+   - …
+   - `10_第2部_<部标题>.md`
    - …
 5. 前言/封皮等非章节内容用 `01_前言_xxx.md` 等格式，同样的递增前缀
-6. **Part 扉页文件只放标题**（`# 罗伯特·摩西`），没有正文导航之类——导航全在 book root `index.md` 里。原书 part 扉页本来就空（只有大标题）
+6. **Part 扉页文件只放标题**（`# 部标题`），没有正文导航之类——导航全在 book root `index.md` 里。原书 part 扉页本来就空（只有大标题）
 7. **Line A 和 Line B 镜像同一结构**：相同的 `NN_` 前缀、相同的 `第NN章` / `第N部` 编号，文件名中文 vs 英文
 8. 章节间双链用 **完整 basename `[[NN_第XX章_xxx]]`** 或带显示名 `[[NN_第XX章_xxx|显示名]]`
 

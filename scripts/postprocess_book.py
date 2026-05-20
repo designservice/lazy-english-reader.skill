@@ -12,7 +12,7 @@
 
 用法：
   python3 postprocess_book.py <temp_dir> <vault_book_dir> \
-      --title "工作的方法" --author "罗伯特·A·卡罗"
+      --title "<中文书名>" --author "<作者>"
 """
 import argparse, re, shutil, subprocess, sys
 from pathlib import Path
@@ -108,7 +108,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("temp_dir", help="translate-book temp dir, contains output.md / book.* / images/")
     ap.add_argument("dest_dir", help="00_全本中译/ in vault")
-    ap.add_argument("--title", required=True, help='Chinese book title, e.g. "工作的方法"')
+    ap.add_argument("--title", required=True, help='Translated book title (used to name output files)')
     ap.add_argument("--author", required=True, help="Author")
     ap.add_argument("--keep-temp", action="store_true", help="don't delete temp dir after processing")
     args = ap.parse_args()
