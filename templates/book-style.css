@@ -1,0 +1,110 @@
+/* 中文书排版样式 —— 给 pandoc EPUB / Calibre PDF 用 */
+
+body {
+  font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", "SimSun", serif;
+  line-height: 1.85;
+  font-size: 1.05em;
+  color: #1a1a1a;
+  margin: 1.5em 1.2em;
+  text-justify: ideographic;
+}
+
+p {
+  text-indent: 2em;
+  margin: 0.6em 0;
+  text-align: justify;
+}
+
+/* 章节标题不缩进、独占新页、居中 */
+h1, h2 {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  font-weight: 600;
+  text-indent: 0;
+  margin: 2em 0 1em 0;
+  page-break-before: always;
+  page-break-after: avoid;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+h1 {
+  font-size: 1.8em;
+  border-bottom: 1px solid #888;
+  padding-bottom: 0.4em;
+}
+
+h2 { font-size: 1.5em; }
+
+h3, h4 {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  font-weight: 600;
+  text-indent: 0;
+  margin: 1.4em 0 0.6em 0;
+  text-align: left;
+  page-break-before: auto;
+  page-break-after: avoid;
+}
+
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.1em; }
+
+blockquote {
+  margin: 1em 0;
+  padding: 0.4em 1.2em;
+  border-left: 3px solid #aaa;
+  background-color: #f6f6f6;
+  color: #444;
+  font-size: 0.95em;
+}
+
+blockquote p { text-indent: 0; }
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em auto;
+}
+
+em, i { font-style: italic; color: #333; }
+strong, b { font-weight: 600; color: #000; }
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: #f0f0f0;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+pre {
+  background: #f6f6f6;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+a { color: #2a5a8a; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+nav#toc, nav.toc, .toc {
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  line-height: 1.8;
+}
+
+nav#toc ol, nav.toc ol, .toc ol {
+  list-style: none;
+  padding-left: 1em;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2em auto;
+  width: 60%;
+}
+
+.dropcap, p::first-letter {
+  font-size: inherit;
+  float: none;
+}
