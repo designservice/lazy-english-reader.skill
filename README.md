@@ -1,6 +1,6 @@
 <div align="center">
 
-# book-workflow.skill
+# lazy-english-reader.skill
 
 ### 不想读英文书.skill
 
@@ -12,10 +12,10 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776ab)](https://www.python.org)
 
 ```bash
-git clone https://github.com/designservice/book-workflow.skill ~/.claude/skills/book-workflow
+git clone https://github.com/designservice/lazy-english-reader.skill ~/.claude/skills/book-workflow
 ```
 
-[做什么](#做什么) · [怎么用](#怎么用) · [产物长什么样](#产物长什么样) · [核心机制](#核心机制) · [设计决定](#设计决定) · [跨平台](#跨平台)
+[做什么](#做什么) · [怎么用](#怎么用) · [产物长什么样](#产物长什么样) · [核心机制](#核心机制) · [跨平台](#跨平台)
 
 </div>
 
@@ -142,23 +142,6 @@ SKILL.md 里的硬约束写作规范：
 ### Line C · 主题归纳
 
 线 B 完成后扫所有章节，识别反复出现的主题，每个主题产出：核心命题 → 来自的章节（短引用 + 双链）→ 提炼原则 → 双链相关主题。
-
----
-
-## 设计决定
-
-以下选择是**深思熟虑的**，不是默认值。你想要别的请 fork：
-
-| 维度 | 选择 | 理由 |
-|---|---|---|
-| 精读叙述视角 | 作者本人**第一人称** | 用"他说"会抽掉作者的声音；让作者自己说才能保留语气和节奏 |
-| 章节小标题 | 章节内**具体物件**（如"三明治"、"163 英里"） | 抽象学术抬头会把生动的内容压扁；具体物件保留读者的画面感 |
-| `编辑解读` 而非"我的解读" | 命名诚实 | 这一段是 AI 写的不是用户写的，名字应反映这点 |
-| 文件命名 | `NN_第NN章_xxx.md` | NN_ 数字前缀强制 Obsidian 按阅读顺序排，不靠 Unicode 字典序的巧合 |
-| Part 扉页 | 平级文件，不用文件夹 | Obsidian 默认把文件夹聚到顶端，破坏阅读顺序 |
-| Vault 结构 | `书库/ + 主题/` 两个根目录 | 不预设日记/灵感/项目，保持 vault 为读书笔记专用 |
-| Book root 单一 index | 不在 `00_全本中译/` 再加一层 index | 减少入口，单文件汇总所有产物链接 |
-| 翻译可选 | 线 A 不是必跑的 | 中文书不需要翻译；只想做精读笔记的人不该被迫装 Calibre |
 
 ---
 
