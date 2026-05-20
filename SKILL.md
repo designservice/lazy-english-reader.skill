@@ -1,6 +1,6 @@
 ---
 name: book-workflow
-description: 个人学习用的整书工作流。把一本书（PDF/EPUB/MOBI/DOCX/TXT）处理成两条产物：(A) 全本中译（并行 subagent + Calibre/Pandoc，输出 epub/pdf/docx）和 (B) 进 Obsidian 的逐章精读笔记（第一人称叙事 + 嵌入式精译 + 编辑解读 + 主题归纳）。两条线可独立开关。当用户说"读这本书"、"翻译这本书"、"做读书笔记"、"book-workflow"、"/book-workflow" 时触发。
+description: 个人学习用的整书工作流。把一本书（PDF/EPUB/MOBI/DOCX/TXT）处理成三条**独立可选**的产物：(A) 全本翻译（可选——外文书需要时用，中文书跳过）；(B) 进 Obsidian 的逐章精读笔记（第一人称叙事 + 嵌入式精译 + 编辑解读）；(C) 全书读完后的主题归纳。当用户说"读这本书"、"翻译这本书"、"做读书笔记"、"book-workflow"、"/book-workflow" 时触发。
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion, TaskCreate, TaskUpdate
 ---
 
