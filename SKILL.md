@@ -1,26 +1,27 @@
 ---
-name: book-workflow
-description: 个人学习用的整书工作流。把一本书（PDF/EPUB/MOBI/DOCX/TXT）处理成三条**独立可选**的产物：(A) 全本翻译（可选——外文书需要时用，中文书跳过）；(B) 进 Obsidian 的逐章精读笔记（第一人称叙事 + 嵌入式精译 + 编辑解读）；(C) 全书读完后的主题归纳。当用户说"读这本书"、"翻译这本书"、"做读书笔记"、"book-workflow"、"/book-workflow" 时触发。
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion, TaskCreate, TaskUpdate
+name: lazy-english-reader
+description: Use when the user wants an AI agent to process a whole book file into Chinese translation, chapter-by-chapter intensive reading notes, Obsidian reading vault entries, or cross-chapter theme notes.
 ---
 
-# Book Workflow Skill
+# Lazy English Reader Skill
 
-整书学习工作流。两条独立可选的线，外加 Obsidian vault 集成。
+整书学习工作流。它把 PDF/EPUB/MOBI/DOCX/TXT 拆成三条独立可选的线：A 全本翻译，B 章节精读，C 主题归纳，外加 Obsidian vault 集成。
+
+本 skill 是 agent-agnostic 的。文档里出现的 `Read`、`Write`、`Bash`、`Agent`、`AskUserQuestion` 等名称只是能力示例；非 Claude Code 环境映射到等价工具即可。
 
 **来源归属**：
 - 线 A 翻译流水线脚本：[deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT)
 - 线 B 提取脚本：[hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill)
 - Obsidian vault 架构方法论：[alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)
 
-## 两条线
+## 主要处理线
 
-| | 线 A：全本翻译 | 线 B：吸收型笔记 |
-|---|---|---|
-| 目的 | 整本中译，备查 | 主动学习与吸收 |
-| 工具 | Calibre + Pandoc + 并行 subagent | extract_book.py + 笔记编排 |
-| 产物 | epub / pdf / docx / md | 每章一份 markdown：第一人称叙事 + 嵌入式精译 + 编辑解读 |
-| 依赖 | `ebook-convert` `pandoc` | 仅 Python 解析库 |
+| | 线 A：全本翻译 | 线 B：吸收型笔记 | 线 C：主题归纳 |
+|---|---|---|---|
+| 目的 | 整本中译，备查 | 主动学习与吸收 | 全书读完后的横向抽取 |
+| 工具 | Calibre + Pandoc + 并行 worker | extract_book.py + 笔记编排 | 扫描章节笔记 + Obsidian 双链 |
+| 产物 | epub / pdf / docx / md | 每章一份 markdown：第一人称叙事 + 嵌入式精译 + 编辑解读 | 方法论、人物、概念等主题笔记 |
+| 依赖 | `ebook-convert` `pandoc` | 仅 Python 解析库 | 线 B 完成后的章节笔记 |
 
 ## 工作流总览
 
@@ -35,9 +36,13 @@ Phase 6  线 A 完成后挂进 vault
 Phase 7  最终报告
 ```
 
+## Agent 能力映射
+
+执行时只需要：读写文件、运行 shell、搜索文件、向用户收集参数、必要时并行或后台处理 chunk。若平台没有并行 worker，线 A 可以顺序执行，只是更慢；若没有结构化提问工具，就先让用户提供配置，再写入 `.lazy-english-reader.json`。
+
 ## Phase 0 — 收集参数
 
-用 `AskUserQuestion` 一次问完：
+一次问完以下参数。在 Claude Code 里可用 `AskUserQuestion`；其他 agent 可用自然语言追问、表单、配置文件或等价的用户输入机制。
 
 1. **书的路径**（必填）
 2. **跑哪些线**：A only / B only / **A+B（推荐）** / 只重跑 C
@@ -52,7 +57,7 @@ Phase 7  最终报告
 6. **章节笔记详略**：仅参考用（叙事长度由内容决定，不卡字数）
 7. **线 A 并行度**：默认 8
 
-把参数写入 `<vault>/书库/<book_dir>/.book-workflow.json` 作为本次 run 的配置档。
+把参数写入 `<vault>/书库/<book_dir>/.lazy-english-reader.json` 作为本次 run 的配置档。兼容旧项目时，如果只发现 `.book-workflow.json`，先读取旧文件，再在下次保存时迁移到新文件名。
 
 ## Phase 1 — 环境检查 + vault 准备
 
@@ -66,11 +71,11 @@ vault 骨架（**仅 vault 不存在时建**，不要覆盖用户已有内容）
 
 ```
 <vault>/
-├── CLAUDE.md            ← 用 templates/vault_CLAUDE.md
+├── CLAUDE.md            ← 用 templates/vault_CLAUDE.md（AI context file）
 ├── index.md             ← 用 templates/vault_index.md
 ├── 书库/
 │   └── <book_dir>/
-│       ├── CLAUDE.md    ← 用 templates/book_CLAUDE.md
+│       ├── CLAUDE.md    ← 用 templates/book_CLAUDE.md（AI context file）
 │       ├── index.md     ← 用 templates/book_index.md
 │       ├── 00_全本中译/
 │       ├── 01_章节精读/
@@ -90,13 +95,13 @@ cd <vault>/书库/<book_dir>/00_全本中译/
 python3 {baseDir}/scripts/convert.py "<book_path>" --olang "<target_lang>"
 ```
 
-之后按线 A 的 7 步流程（与原 translate-book 一致）：discover chunks → build glossary → parallel subagent translate → merge meta per batch → verify → translate title → merge_and_build。
+之后按线 A 的 7 步流程（与原 translate-book 一致）：discover chunks → build glossary → parallel worker translate → merge meta per batch → verify → translate title → merge_and_build。
 
-线 A **可以后台跑**：`Bash run_in_background=true`。如果用户选了 A+B，先启动线 A 再进 Phase 3。
+线 A **可以后台跑**。Claude Code 可用 `Bash run_in_background=true`；其他环境用后台 shell、任务队列或独立 worker。用户选 A+B 时，先启动线 A 再进 Phase 3。
 
-> 注：78+ chunks 时建议让 line A 跑独立长任务，不要在主对话里逐个 spawn subagent —— 会爆 context。可考虑：
+> 注：78+ chunks 时建议让 line A 跑独立长任务，不要在主对话里逐个创建 worker —— 会爆 context。可考虑：
 > 1. 写一个独立 shell 脚本调用 claude CLI 顺序翻译，后台 nohup 起
-> 2. 或单 dispatching agent 内部并行
+> 2. 或让一个 dispatching worker 内部并行
 
 具体术语表 / merge / build 细节见原 [translate-book SKILL.md](https://github.com/deusyu/translate-book/blob/main/SKILL.md)。
 
@@ -305,7 +310,7 @@ python3 {baseDir}/scripts/postprocess_book.py \
 
 ```
 00_全本中译/
-├── index.md            ← 由 main agent 在 Phase 6 之后写
+├── index.md            ← 由协调 agent 在 Phase 6 之后写
 ├── glossary.json
 ├── 00_xxx.md … NN_xxx.md  ← 每章独立 markdown
 └── 其他格式/
@@ -317,7 +322,7 @@ python3 {baseDir}/scripts/postprocess_book.py \
     └── images/         ← 原书图片
 ```
 
-然后 main agent 写 `00_全本中译/index.md`（用 Obsidian 双链列出所有章节 + `其他格式/` 入口），并在 book_dir 的 `index.md` 顶部加链接。
+然后协调 agent 写 `00_全本中译/index.md`（用 Obsidian 双链列出所有章节 + `其他格式/` 入口），并在 book_dir 的 `index.md` 顶部加链接。
 
 如果线 A 失败：在 `00_全本中译/_FAILED.md` 写诊断信息。
 
@@ -332,11 +337,11 @@ python3 {baseDir}/scripts/postprocess_book.py \
 ## 断点续跑
 
 每个 Phase 可中断重入：
-- 参数存 `.book-workflow.json`
+- 参数存 `.lazy-english-reader.json`（兼容读取旧的 `.book-workflow.json`）
 - 线 A 自带 chunk-level resume
 - Phase 3 检查 `.extracted.json` 已存在
 - Phase 4 检查章节地图状态字段
-- 用户重新 `/book-workflow` 应提示"检测到未完成 run，继续？"
+- 用户重新触发 `lazy-english-reader` 应提示"检测到未完成 run，继续？"
 
 ## 失败处理
 
@@ -350,11 +355,11 @@ python3 {baseDir}/scripts/postprocess_book.py \
 | 用户清理后重跑 pandoc/ebook-convert 发现没图 | **教训**：`merge_and_build.py` 输出的 epub/pdf/docx **嵌了图**；如果用户事后让删 temp，必须**先把 `temp/images/` 挪到 `00_全本中译/images/`**，再清 temp。output.md 里图片是相对引用 `images/000NNN.jpg`——挪到平级目录后还能解析 |
 | 重生成 epub/pdf 前要先备份带图老版 | 重跑 pandoc 会 overwrite 同名 epub/pdf/docx。如果需要清洗 output.md 后重生成，先 `cp book.epub book.epub.bak`，确认新版图正常再删 bak |
 
-## 附录：翻译 Prompt（线 A subagent）
+## 附录：翻译 Prompt（线 A worker）
 
-复用 [translate-book SKILL.md 第 156-218 行](https://github.com/deusyu/translate-book/blob/main/SKILL.md)。每个 subagent prompt 末尾注入 `print-terms-for-chunk` 输出的术语表。
+复用 [translate-book SKILL.md 第 156-218 行](https://github.com/deusyu/translate-book/blob/main/SKILL.md)。每个 worker prompt 末尾注入 `print-terms-for-chunk` 输出的术语表。
 
-**已知陷阱**：subagent 偶尔把**章节标题降级为普通段落**——原文如果一个章节用大字号或装饰排版（如首字下沉 + 全大写 + 居中），subagent 可能识别为段落而不是 `##` 标题。这造成 line A 切分时章节数少于实际章数。
+**已知陷阱**：worker 偶尔把**章节标题降级为普通段落**——原文如果一个章节用大字号或装饰排版（如首字下沉 + 全大写 + 居中），worker 可能识别为段落而不是 `##` 标题。这造成 line A 切分时章节数少于实际章数。
 
 **对策**：
 
@@ -362,7 +367,7 @@ python3 {baseDir}/scripts/postprocess_book.py \
 2. **检查**：`postprocess_book.py` 在切分前**对比 PDF outline**：
    - `python3 -c "import fitz; print(len(fitz.open('book.pdf').get_toc()))"` 拿真值章节数
    - 数 `output.md` 里的 `##` 数量
-   - 如果差距 > 2，在 `00_全本中译/_HEADINGS_MISMATCH.md` 列出 outline 章节标题 + 各章在中文里可能的对应位置（用首句关键词搜索），让 main agent 或用户手工修复
+   - 如果差距 > 2，在 `00_全本中译/_HEADINGS_MISMATCH.md` 列出 outline 章节标题 + 各章在中文里可能的对应位置（用首句关键词搜索），让协调 agent 或用户手工修复
 
 ## 附录：章节标题对齐脚本
 

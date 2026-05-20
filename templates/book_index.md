@@ -24,5 +24,5 @@ tags: [读书笔记]
 ## 元信息
 
 - 笔记创建于：{{DATE}}
-- 用 `/book-workflow` skill 处理
+- 用 `lazy-english-reader` skill 处理
 - 源文件：`{{SOURCE_PATH}}`

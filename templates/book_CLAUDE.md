@@ -1,6 +1,6 @@
 # CLAUDE.md — {{BOOK_TITLE}}
 
-本书书库的 AI 上下文。
+本书书库的 AI 上下文。文件名保留为 `CLAUDE.md` 是为了兼容 Claude Code；其他 agent 可把它当作目录级 context file 读取。
 
 ## 基本信息
 

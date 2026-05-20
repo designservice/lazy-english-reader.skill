@@ -1,6 +1,6 @@
-# CLAUDE.md — Obsidian Vault 操作指南
+# CLAUDE.md — Obsidian Vault AI 操作指南
 
-这个 vault 由 AI（Claude / OpenClaw / 其他 agent）协同维护。本文件是给 AI 看的导航说明。
+这个 vault 由 AI agent（Claude Code / Codex / Cursor / Gemini CLI / 其他 agent）协同维护。本文件是给 AI 看的导航说明。文件名保留为 `CLAUDE.md` 是为了兼容 Claude Code；其他 agent 可把它当作目录级 context file 读取。
 
 ## Vault 结构
 
@@ -53,4 +53,4 @@
 
 ## 工具
 
-- 整书工作流：`/book-workflow` skill
+- 整书工作流：`lazy-english-reader` skill
