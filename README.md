@@ -1,8 +1,8 @@
 <div align="center">
 
-# lazy-english-reader.skill
+# 不想读英文书.skill
 
-### 不想读英文书.skill
+<sub>`lazy-english-reader.skill`</sub>
 
 **让 AI 替你啃英文原版书：自动翻译 + 拆解成 Obsidian 里的中文精读笔记。**
 
