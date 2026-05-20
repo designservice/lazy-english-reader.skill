@@ -7,12 +7,13 @@
 **让 AI 替你啃英文原版书：自动翻译 + 拆解成 Obsidian 里的中文精读笔记。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://claude.ai/code)
+[![Agent-Agnostic](https://img.shields.io/badge/Agent-Agnostic-blueviolet)](https://skills.sh)
+[![Skills](https://img.shields.io/badge/skills.sh-Compatible-green)](https://skills.sh)
 [![Obsidian](https://img.shields.io/badge/Obsidian-Integrated-purple)](https://obsidian.md)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776ab)](https://www.python.org)
 
 ```bash
-git clone https://github.com/designservice/lazy-english-reader.skill ~/.claude/skills/book-workflow
+npx skills add designservice/lazy-english-reader.skill
 ```
 
 [做什么](#做什么) · [怎么用](#怎么用) · [产物长什么样](#产物长什么样) · [核心机制](#核心机制) · [跨平台](#跨平台)
