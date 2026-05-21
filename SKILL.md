@@ -23,6 +23,35 @@ description: Use when the user wants to process a whole book file (PDF, EPUB, MO
 | 产物 | epub / pdf / docx / md | 每章一份 markdown：第一人称叙事 + 嵌入式精译 + 编辑解读 | 方法论、人物、概念等主题笔记 |
 | 依赖 | `ebook-convert` `pandoc` | 仅 Python 解析库 | 章节精读完成后的章节笔记 |
 
+## 核心原则：single source of truth — 全本翻译和章节精读必须按同一份切分对齐
+
+**这是 skill 最重要的设计原则。** 因为全本翻译和章节精读会**互相 wikilink**（章节精读里的"原文 → 中译"链接、全本翻译入口里的"→ 精读笔记"链接），两条线的章节划分必须 1:1 对齐——同章号、同文件名、同粒度。
+
+**权威是 `.chapter_map.json`**，在 Phase 3 生成：
+
+```json
+{
+  "chapters": [
+    {"num": 0, "filename": "第00章_引言_Foreword_Introduction",
+     "anchors": []},
+    {"num": 1, "filename": "第01章_谁建了金字塔_Who_Built_the_Pyramids",
+     "anchors": ["序言 I", "PREFACE I", "MIKE LEFEVRE"]},
+    ...
+  ]
+}
+```
+
+- **章节精读** 用 chapter_map 决定写哪些章节笔记，文件名直接取 `chapters[i].filename`
+- **全本翻译** 的 postprocess 用 `--chapter-map` 参数驱动切分，文件名也用 `chapters[i].filename`
+- 结果：`00_全本中译/第04章_耕地谋生_Working_the_Land.md` 和 `01_章节精读/第04章_耕地谋生_Working_the_Land.md` **同名只是不同文件夹**
+
+**反 pattern（不要做）**：
+- ❌ 章节精读按"工种类别"切 29 篇，全本翻译按 EPUB 自带 chapter 切 14 篇——映射不上
+- ❌ 全本翻译按 markdown 标题 `#` `##` 切——翻译过程会把 section 标题降级为段落，导致前言被堆成一个巨型文件
+- ❌ "两条线粒度不一致没关系"——必然导致 cross-link 错位
+
+**为什么 chapter_map 是权威**：它在 EPUB 解出的英文纯文本上用 ALL-CAPS 启发式建立，**翻译之前**就确定。翻译过程对它不可见，所以不会污染。
+
 ## 工作流总览
 
 ```
@@ -184,9 +213,26 @@ for chapter in extracted_chapters:
         flag_for_resplit(chapter)
 ```
 
-**处理**：检测到 anthology 后，**章节笔记单元改成 section（或 worker / 篇）而不是 EPUB chapter**。文件命名仍按阅读顺序数字前缀 `NN_第XX章_<slug>.md`，但"章"现在指的是真正的读单元——可能比 EPUB 自带的 chapter 多很多（该口述史 EPUB 有 ~9 个 chapter，重切后有 29 个真正的读单元 / section）。
+**处理**：检测到 anthology 后，**章节笔记单元改成 section（或 worker / 篇）而不是 EPUB chapter**。文件命名仍按阅读顺序数字前缀 `第NN章_<slug>.md`，但"章"现在指的是真正的读单元——可能比 EPUB 自带的 chapter 多很多（某口述史经典 EPUB 有 ~9 个 chapter，重切后有 29 个真正的读单元 / section）。
 
-这件事**章节精读关心，全本翻译不关心**——全本翻译按 EPUB 自己的 chapter 翻译就行。两条线**章节计数会对不上**，这是正确的；不要为了对齐去强行合并章节精读。
+**这件事章节精读和全本翻译都要按同一份结构走** —— 见上面的「核心原则」。
+重切后产出 `.chapter_map.json`，**章节精读用它写笔记，全本翻译 postprocess 用它切中译**，两条线产出的 markdown 同名。
+
+### 生成 `.chapter_map.json`
+
+```python
+# Phase 3 末尾
+chapter_map = {
+    "chapters": [
+        {"num": i, "filename": f"第{i:02d}章_{中文slug}_{english_slug}",
+         "anchors": [list_of_anchor_strings_for_this_chapter]}
+        for i, ch in enumerate(real_reading_units)
+    ]
+}
+Path(book_dir / '.chapter_map.json').write_text(json.dumps(chapter_map, ensure_ascii=False, indent=2))
+```
+
+**anchors 是什么**：每章起点的「候选字符串列表」，按优先级排序——脚本对每个候选在合并 markdown 里找 H1/H2 标题，第一个找到的就是该章起始行。**工人英文名 / 篇章作者英文名是最稳的锚点**（翻译会保留）。section 中文标题（如 "前言" "引言"）可以作为备选，但常被翻译降级为段落，作可选 anchor 但不要只放这一个。
 
 产出 `01_章节精读/00_章节地图.md`：
 
@@ -340,23 +386,18 @@ python3 {baseDir}/scripts/postprocess_book.py \
     "<temp_dir>" \
     "<vault>/书库/<book_dir>/00_全本中译" \
     --title "<中文书名（不带《》）>" \
-    --author "<作者>"
+    --author "<作者>" \
+    --chapter-map "<vault>/书库/<book_dir>/.chapter_map.json"
 ```
 
-这条 **一条命令完成所有后处理**：
+**`--chapter-map` 必传**（除非你确认这本书结构很简单且 markdown 标题不会丢）。它让全本翻译按 Phase 3 建立的 chapter_map 切，**与章节精读 1:1 对齐**（同名只是不同文件夹）。
 
-```bash
-python3 {baseDir}/scripts/postprocess_book.py \
-    "<temp_dir>" \
-    "<vault>/书库/<book_dir>/00_全本中译" \
-    --title "<中文书名（不带《》）>" \
-    --author "<作者>"
-```
+如果没有 `.chapter_map.json` 又想跑（不建议），可以用 `--structure-json <path>/.structure.json` 让脚本退化到「每个 section 一章」。**最差不要不传任何 anchor 参数**——脚本会回退到按 `##` 切分的 legacy 模式，前言部分会塞成一个巨型文件（在结构复杂的口述史 / 散文集 / 短篇集上必坏）。
 
 这个脚本做了：
 
 1. 读 temp dir 的 `output.md`，**清洗伪方括号** `[文本]`（Calibre HTMLZ → markdown 的伪影），保留真链接和图片
-2. 按 `##` 标题**切分**成每章独立 markdown，**平铺**在 `00_全本中译/` 根
+2. **用 chapter_map 切分**（用工人英文名作 anchor，不依赖 markdown 标题层级——这些经常在翻译过程中失落），输出与章节精读同名的 markdown，**平铺**在 `00_全本中译/` 根
 3. 把 temp dir 的 `images/` **挪到** `00_全本中译/其他格式/images/`
 4. 复制 `glossary.json` 到 `00_全本中译/`
 5. 复制 `templates/book-style.css` 到 `其他格式/book-style.css`
@@ -372,7 +413,7 @@ python3 {baseDir}/scripts/postprocess_book.py \
 00_全本中译/
 ├── index.md            ← 由协调 agent 在 Phase 6 之后写
 ├── glossary.json
-├── 00_xxx.md … NN_xxx.md  ← 每章独立 markdown
+├── 第00章_xxx.md … 第NN章_xxx.md  ← 每章独立 markdown，**文件名与 01_章节精读/ 下完全相同**
 └── 其他格式/
     ├── <书名>.epub
     ├── <书名>.pdf
@@ -427,3 +468,5 @@ python3 {baseDir}/scripts/postprocess_book.py \
 ## 附录
 
 全本翻译 worker 的翻译 prompt 模板（复用 translate-book）+ 章节标题降级陷阱与对策 + `scripts/realign_headings.py` 设计草稿，全部见 `references/translate_prompt.md`。
+
+**注意**：章节标题降级陷阱的根治方案现在已经在 `postprocess_book.py` 里实现（`--chapter-map` 用 anchor-based 切分绕过 markdown 标题层级依赖），不再需要 `realign_headings.py`。translate_prompt.md 里那个 "对策 2" 章节标题对齐方案，现在的实现路径就是 chapter_map.json + postprocess_book.py `--chapter-map`。

@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
 """
-后处理 line A 产物。
+后处理全本翻译产物。
 
-输入：translate-book 的 merge_and_build.py 产物（output.md, book.epub, book.pdf, book.docx）
-+ temp dir 里的 images/
+输入：merge_and_build.py 产物（output.md, book.epub, book.pdf, book.docx）+ images/
 
 输出：按 `00_全本中译/` 的最终布局：
-  - 根目录平铺每章 markdown（按 `##` 切分 output.md）
+  - 根目录平铺每章 markdown
   - 子目录 `其他格式/`：用中文书名命名的 epub/pdf/docx/md + book-style.css + images/
   - 章节里的伪方括号清洗
 
+**切分策略（按优先级降序）**：
+  1. `--chapter-map <json>`: 用 chapter_map.json 驱动切分（强制与线 B 对齐）
+     ↑ 这是推荐方式。chapter_map.json 由 Phase 3 生成，**线 A 和线 B 共用**。
+  2. `--structure-json <json>`: 用 .structure.json 的 sections 作锚点
+     ↑ fallback：没有 chapter_map 时，每个 section 自成一章
+  3. （都没有）：legacy 模式，按 `##` 标题切分
+     ⚠️ legacy 模式在 section 标题被翻译降级为段落的书上会失败——前言部分会塞成一个巨型文件。
+     除非你确认这本书结构很简单，**否则不要用 legacy 模式**。
+
+为什么这么设计：见 SKILL.md 关于 "single source of truth" 的原则——任何后产出的产物文件名都要与
+线 B（第一份产出）逐字对齐。.structure.json 是切分权威，它在翻译前从英文 EPUB 扫出来，不会被翻译过程污染。
+
 用法：
-  python3 postprocess_book.py <temp_dir> <vault_book_dir> \
-      --title "<中文书名>" --author "<作者>"
+  python3 postprocess_book.py <temp_dir> <vault_book_dir> \\
+      --title "<中文书名>" --author "<作者>" \\
+      --chapter-map "<vault_book_dir>/.chapter_map.json"
 """
-import argparse, re, shutil, subprocess, sys
+import argparse, json, re, shutil, subprocess, sys
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -45,14 +57,185 @@ def clean_dropcaps(text):
     return text
 
 
+def strip_epub_toc(text):
+    """
+    很多 EPUB 在文件开头有自动生成的目录——形式是连续若干行短文本（< 30 字、
+    没有句号收尾、互相独立成段），翻译后这堆变成中译的"目录正文"塞进前言。
+    检测并删除：找开头的「连续短独立行块」如果 ≥ 5 行，整块删掉，加一行说明。
+    只对前 1/3 of text 起作用，避免误伤正文。
+    """
+    lines = text.split('\n')
+    cutoff = max(50, len(lines) // 3)  # 只看开头部分
+
+    # 找出第一个 "TOC entry block": 连续多个短独立段（每段 1 行短文本 + 空行）
+    i = 0
+    # Skip metadata/header/image at top
+    while i < cutoff and (
+        not lines[i].strip() or
+        lines[i].startswith('#') or
+        lines[i].startswith('!') or  # image
+        lines[i].startswith('>') or  # blockquote
+        lines[i].startswith('---') or  # frontmatter
+        lines[i].startswith('|') or  # table
+        lines[i].strip() == '目录'
+    ):
+        i += 1
+
+    toc_start = i
+    short_lines_in_a_row = 0
+    last_short_block_end = None
+
+    while i < cutoff:
+        s = lines[i].strip()
+        # An "entry": short line (< 30 chars), no sentence-ending punctuation,
+        # may be followed by blank line(s)
+        is_entry = (
+            len(s) > 0 and len(s) <= 30 and
+            not re.search(r'[。.!?！？]', s) and  # no sentence punctuation
+            not s.startswith('#') and  # not a heading
+            not s.startswith('!') and not s.startswith('>') and
+            # not bold/italic-emphasized real content
+            not (s.startswith('*') and s.endswith('*'))
+        )
+        if is_entry:
+            short_lines_in_a_row += 1
+            last_short_block_end = i
+        elif not s:  # blank
+            pass
+        else:
+            break
+        i += 1
+
+    if short_lines_in_a_row >= 5 and last_short_block_end is not None:
+        # Remove from toc_start to last_short_block_end (inclusive)
+        new_lines = lines[:toc_start]
+        new_lines.append('> 此处原 EPUB 自动生成的目录已删除（章节列表见入口 index）。')
+        new_lines.append('')
+        new_lines.extend(lines[last_short_block_end + 1:])
+        return '\n'.join(new_lines)
+    return text
+
+
 def slugify(s):
     s = re.sub(r'[^\w一-鿿\-]', '_', s)
     s = re.sub(r'_+', '_', s).strip('_')
     return s[:40]
 
 
-def split_by_chapters(output_md_path, root_dir):
-    """按 `##` 标题把 output.md 切成多个章节文件，放到 root_dir。"""
+def _find_heading_line(name, lines):
+    """在 lines 里找第一处 H1 或 H2 的内容（剥去 ***emphasis***）等于 name 的行号。"""
+    for i, line in enumerate(lines):
+        m = re.match(r'^#{1,2}\s+\**\s*(.+?)\s*\**\s*$', line)
+        if m and m.group(1).strip() == name:
+            return i
+    return None
+
+
+def _strip_pandoc_attrs(text):
+    """剥掉 pandoc 给标题加的 {#id .class} 属性。"""
+    return re.sub(r'\s*\{#[^}]*\}', '', text)
+
+
+def split_by_chapter_map(output_md_path, root_dir, chapter_map):
+    """
+    用 chapter_map.json 切分。这是**推荐方式**，强制与线 B 章节笔记对齐。
+
+    chapter_map 格式：
+      {
+        "chapters": [
+          {"num": 0, "filename": "第00章_引言_Foreword_Introduction",
+           "anchors": []},                              # 没工人，前言部分（在第一个 anchor 之前）
+          {"num": 1, "filename": "第01章_..._...",
+           "anchors": ["序言 I", "PREFACE I", "MIKE LEFEVRE"]},  # 第一个匹配上的就是该章起点
+          ...
+        ]
+      }
+
+    anchors 是该章的「起点候选」，按优先级排序。脚本对每个候选在合并 md 里找 H1/H2 标题；
+    第一个找到的就是该章的起始行。该章的结束 = 下一章的起始行。
+    工人英文名是最稳的锚点（翻译过程保留）。
+    """
+    text = output_md_path.read_text(encoding='utf-8')
+    text = _strip_pandoc_attrs(text)
+    lines = text.split('\n')
+
+    chapters = chapter_map['chapters']
+    # 找每章的起始行
+    starts = []
+    for ch in chapters:
+        pos = None
+        for anchor in ch.get('anchors', []):
+            pos = _find_heading_line(anchor, lines)
+            if pos is not None:
+                break
+        starts.append(pos)
+
+    # 第一章没找到锚点（通常是前言，没有工人）→ 起始行 = 0
+    if starts and starts[0] is None:
+        starts[0] = 0
+
+    # 切片：第 i 章 = [starts[i], starts[i+1])
+    results = []
+    for i, ch in enumerate(chapters):
+        start = starts[i]
+        end = starts[i + 1] if i + 1 < len(starts) and starts[i + 1] is not None else len(lines)
+        if start is None:
+            # 中间某章锚点全部没找到 — 跳过并告警
+            print(f"WARN: chapter {ch['num']} '{ch['filename']}' anchors {ch.get('anchors')} 都找不到, 跳过", file=sys.stderr)
+            continue
+        chunk = '\n'.join(lines[start:end]).strip()
+        fname = ch['filename']
+        if not fname.endswith('.md'):
+            fname += '.md'
+        (root_dir / fname).write_text(chunk + '\n', encoding='utf-8')
+        results.append((ch['num'], ch['filename'], len(chunk)))
+    return results
+
+
+def split_by_structure(output_md_path, root_dir, structure):
+    """
+    用 .structure.json 切分（没有 chapter_map 时的 fallback）。
+    每个 section 自成一章。文件命名：第NN章_<英文 section 名>.md
+    """
+    text = output_md_path.read_text(encoding='utf-8')
+    text = _strip_pandoc_attrs(text)
+    lines = text.split('\n')
+
+    sections = structure.get('sections', [])
+    # 找每个 section 的起始行：用 section 第一个工人的英文名作锚点
+    starts = []
+    for sec in sections:
+        pos = None
+        for w in sec.get('workers', []):
+            pos = _find_heading_line(w['name'], lines)
+            if pos is not None:
+                break
+        # 如果 section 没有 worker（如 FOREWORD），用 section 名（英文）作锚点
+        if pos is None:
+            pos = _find_heading_line(sec['title'], lines)
+        starts.append(pos)
+
+    # 第一个 section 找不到 anchor → 起始 0
+    if starts and starts[0] is None:
+        starts[0] = 0
+
+    results = []
+    for i, sec in enumerate(sections):
+        start = starts[i]
+        end = starts[i + 1] if i + 1 < len(starts) and starts[i + 1] is not None else len(lines)
+        if start is None: continue
+        chunk = '\n'.join(lines[start:end]).strip()
+        fname = f"第{i:02d}章_{slugify(sec['title'])}.md"
+        (root_dir / fname).write_text(chunk + '\n', encoding='utf-8')
+        results.append((i, fname, len(chunk)))
+    return results
+
+
+def split_by_h2_legacy(output_md_path, root_dir):
+    """
+    Legacy 模式：按 `##` 切分。**已知问题**：翻译后 section 标题经常降级为
+    普通段落，导致前言被堆成巨型文件。除非确认书结构很简单，否则不要用这个。
+    """
     text = output_md_path.read_text(encoding='utf-8')
     lines = text.split('\n')
     chapters = []
@@ -75,7 +258,6 @@ def split_by_chapters(output_md_path, root_dir):
     for num, title, content in chapters:
         fname = f"{num:02d}_{slugify(title)}.md"
         (root_dir / fname).write_text(content + '\n', encoding='utf-8')
-
     return chapters
 
 
@@ -110,6 +292,8 @@ def main():
     ap.add_argument("dest_dir", help="00_全本中译/ in vault")
     ap.add_argument("--title", required=True, help='Translated book title (used to name output files)')
     ap.add_argument("--author", required=True, help="Author")
+    ap.add_argument("--chapter-map", help="path to chapter_map.json (PREFERRED — forces alignment with line B)")
+    ap.add_argument("--structure-json", help="path to .structure.json (fallback — section-per-chapter)")
     ap.add_argument("--keep-temp", action="store_true", help="don't delete temp dir after processing")
     args = ap.parse_args()
 
@@ -137,16 +321,31 @@ def main():
     main_md = 其他 / f"{title}.md"
     main_md.write_text(cleaned, encoding='utf-8')
 
-    # 2. 按 ## 切章节，写到 dest 根
-    chapters = split_by_chapters(main_md, dest)
-    print(f"split into {len(chapters)} chapter files")
+    # 2. 切章节（按优先级）：chapter_map > structure.json > legacy ##
+    if args.chapter_map:
+        chapter_map = json.loads(Path(args.chapter_map).read_text(encoding='utf-8'))
+        chapters = split_by_chapter_map(main_md, dest, chapter_map)
+        print(f"split via chapter_map → {len(chapters)} chapter files (与线 B 对齐)")
+    elif args.structure_json:
+        structure = json.loads(Path(args.structure_json).read_text(encoding='utf-8'))
+        chapters = split_by_structure(main_md, dest, structure)
+        print(f"split via structure.json → {len(chapters)} chapter files (每 section 一章)")
+    else:
+        print("WARN: 无 --chapter-map 或 --structure-json，回退到 legacy ## 切分模式", file=sys.stderr)
+        print("WARN: 翻译过程经常把 section 标题降级为段落，legacy 模式会让前言成巨型文件", file=sys.stderr)
+        chapters = split_by_h2_legacy(main_md, dest)
+        print(f"split via legacy ## → {len(chapters)} chapter files")
 
-    # 3. 清洗每个章节文件的伪方括号 + 首字下沉残留
-    for f in sorted(dest.glob("*.md")):
-        if f.parent != dest or f.name == 'index.md': continue
+    # 3. 清洗每个章节文件的伪方括号 + 首字下沉残留 + 第一章的 EPUB TOC
+    chapter_files = sorted([f for f in dest.glob("*.md")
+                           if f.parent == dest and f.name != 'index.md'])
+    for idx, f in enumerate(chapter_files):
         t = f.read_text(encoding='utf-8')
         t = strip_pseudo_brackets(t)
         t = clean_dropcaps(t)
+        # First chapter often contains the EPUB's auto-TOC translated as plain text
+        if idx == 0:
+            t = strip_epub_toc(t)
         f.write_text(t, encoding='utf-8')
 
     # 4. 挪 images
