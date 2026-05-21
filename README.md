@@ -152,15 +152,31 @@ Skill 会一次问完必要参数，比如要生成哪些产物、目标语言�
 
 ---
 
-## 致谢
+## 致谢与项目定位
 
-整合了三个开源项目：
+这个 skill 最初的种子来自三个开源项目，但现在它已经是个独立的产品，原创设计远大于借鉴的比例。
 
-| 项目 | 用途 | License |
+### 早期参考（起点）
+
+| 起点项目 | 最初从中借鉴 | License |
 |---|---|---|
-| [deusyu/translate-book](https://github.com/deusyu/translate-book) | 并行翻译流水线 | MIT |
-| [hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill) | 多格式文本提取 | 见仓库 |
-| [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) | Obsidian + Claude Code 方法论 | 公开分享 |
+| [deusyu/translate-book](https://github.com/deusyu/translate-book) | 并行翻译流水线骨架（`convert.py` / `merge_and_build.py` 雏形） | MIT |
+| [hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill) | 多格式文本提取（`extract_book.py` 雏形） | 见仓库 |
+| [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) | 单书 Obsidian vault 方法论的灵感 | 公开分享 |
+
+### 本 skill 原创的设计
+
+借鉴只覆盖最早的几个模块。**整套工作流的架构和绝大部分实操规则**都是本 skill 原创：
+
+- **三产物 A / B / C 独立可选**架构（全本翻译 / 章节精读 / 主题归纳）——原项目都是单线
+- **single source of truth 原则**：`.chapter_map.json` 作切分权威，line A 和 line B 文件名 1:1 对齐
+- **锚点切分法**：用工人 / 章节作者英文名作 anchor 切分全本翻译，绕过翻译过程的"section 标题降级为段落"陷阱
+- **EPUB anthology detection**：识别口述史 / 散文集 / 短篇集这类 EPUB chapter 与真实读单元不一致的书，自动按真实单元重切
+- **subagent 派发模式**：章节笔记批量生成，主对话 context 节省 ≥70%
+- **HANDOFF / `_DONE` 机制**：长后台翻译跑完用户回来能无缝续接
+- **写作风格 9 条强制规则**：第一人称中文复述 + 嵌入式精译（**中文 primary + 英文小字斜体**）+ 抽象词 inline gloss + 编辑解读边界 + 多人多视角章节模板
+- **跨章双链** + **主题归纳（线 C）**——原项目都没有这一线
+- **完整 postprocess 流水线**：anchor 切分 + EPUB 自动目录清洗 + 伪方括号清洗 + 首字下沉残留清洗 + A5 PDF + 中文 CSS
 
 本项目 MIT（见 [`LICENSE`](LICENSE)），上游 LICENSE 在 `LICENSE-translate-book` 和 `LICENSE-book-reader`。
 

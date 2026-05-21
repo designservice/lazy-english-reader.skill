@@ -9,10 +9,12 @@ description: Use when the user wants to process a whole book file (PDF, EPUB, MO
 
 本 skill 是 agent-agnostic 的。文档里出现的 `Read`、`Write`、`Bash`、`Agent`、`AskUserQuestion` 等名称只是能力示例；非 Claude Code 环境映射到等价工具即可。
 
-**来源归属**：
-- 全本翻译流水线脚本：[deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT)
-- 章节提取脚本：[hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill)
-- Obsidian vault 架构方法论：[alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)
+**早期参考**（最初的种子来自这三个项目，现已走出去很远——见 README 致谢）：
+- 翻译流水线骨架最初借鉴 [deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT)
+- 多格式文本提取雏形借鉴 [hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill)
+- 单书 vault 方法论的灵感来自 [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)
+
+这个 skill 的核心特性——**三产物独立可选**、**single source of truth 双线对齐**、**锚点切分**、**subagent 派发**、**anthology 检测**、**写作风格 9 条规则**、**主题归纳**——都属于本 skill 原创。
 
 ## 三个产物
 
