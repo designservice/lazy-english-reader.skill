@@ -6,7 +6,7 @@
 
 **把英文原版书处理成中文译本、章节精读笔记和 Obsidian 主题索引。**
 
-<sub>A Claude Code skill that turns English books into Chinese translations + Obsidian-integrated intensive reading notes + cross-chapter theme indexes.</sub>
+<sub>A Claude Code skill that turns an English PDF into a Chinese translation, per-chapter reading notes, and a theme index — all dropped into your Obsidian vault.</sub>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Agent-Agnostic](https://img.shields.io/badge/Agent-Agnostic-blueviolet)](https://skills.sh)
@@ -49,15 +49,15 @@ npx skills add designservice/lazy-english-reader.skill
 
 ## 起点的灵感
 
-这个 skill 的灵感最早来自 [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) — 一套用 Claude Code + Obsidian "AI 替你读一本书"的方法论。orange-book 解决了"AI 帮你做一本书精读笔记"这件事；这个 skill 把它扩展成**三产物工作流**（全本翻译 + 章节精读 + 主题归纳），让 AI 在更系统的层面替你读书。
+起点是 [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) —— 一份教你怎么手动用 Claude Code + Obsidian 做一本书精读笔记的方法论文档。这个 skill 把那套手动流程打包成一条命令，并在精读笔记之外补了译本和主题索引两条产物线。
 
-具体差异：
+和 orange-book 的具体差异：
 
-- orange-book 是**方法论文档**（教你怎么手动一步步用 Claude 读书）；这个是**可执行 skill**（一条命令跑完整套）
-- 增加了**全本翻译**线（英文书一键变中文 EPUB / PDF / DOCX）
-- 增加了**主题归纳**线（跨章节横切提取主题）
-- **锚点切分**让全本翻译和章节笔记自动 1:1 对齐（同名只是不同文件夹）
-- **subagent 派发**让一本 130+ 工人的口述史也能 hold 住
+- orange-book 是 README 形式的操作步骤，需要你在对话里一步步引导 Claude；这个是可执行 skill，`/lazy-english-reader book.pdf` 跑完整套
+- 多了一条全本翻译线：英文 PDF 出中文 EPUB / PDF / DOCX，术语在全书内保持一致
+- 多了一条主题归纳线：跨章节抽取人物、概念、方法论，反链回原章节
+- 译文章节和精读笔记用同一份 `.structure.json` 切，两边文件名 1:1 对齐，wikilink 不会断
+- 主对话只跑调度，每章的翻译和精读派给 subagent；处理 130 位工人的《Working》这种长口述史时，主上下文不会被章节正文撑爆
 
 ---
 
