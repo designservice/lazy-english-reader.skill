@@ -9,10 +9,10 @@ description: Use when the user wants to process a whole book file (PDF, EPUB, MO
 
 本 skill 是 agent-agnostic 的。文档里出现的 `Read`、`Write`、`Bash`、`Agent`、`AskUserQuestion` 等名称只是能力示例；非 Claude Code 环境映射到等价工具即可。
 
-**最初的种子**（绝大部分设计已原创）：
-- 翻译流水线骨架：[deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT)
-- 文本提取雏形：[hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill)
-- Obsidian vault 方法论的灵感：[alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)
+**起点参考**：
+- 全本翻译流水线脚本：[deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT)
+- 章节提取脚本：[hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill)
+- Obsidian vault 架构方法论：[alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)
 
 ## 三个产物
 

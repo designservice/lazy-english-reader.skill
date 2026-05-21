@@ -154,13 +154,15 @@ Skill 会一次问完必要参数，比如要生成哪些产物、目标语言�
 
 ## 致谢
 
-最初的种子来自三个项目，绝大部分设计后来是原创的：
+起点参考了三个开源项目：
 
-- [deusyu/translate-book](https://github.com/deusyu/translate-book) (MIT) — 翻译流水线骨架
-- [hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill) — 文本提取雏形
-- [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) — Obsidian vault 方法论的灵感
+| 项目 | 用途 | License |
+|---|---|---|
+| [deusyu/translate-book](https://github.com/deusyu/translate-book) | 并行翻译流水线 | MIT |
+| [hijiangtao/book-reader-skill](https://github.com/hijiangtao/book-reader-skill) | 多格式文本提取 | 见仓库 |
+| [alchaincyf/obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book) | Obsidian + Claude Code 方法论 | 公开分享 |
 
-本项目 MIT（见 [`LICENSE`](LICENSE)）。
+本项目 MIT（见 [`LICENSE`](LICENSE)），上游 LICENSE 在 `LICENSE-translate-book` 和 `LICENSE-book-reader`。
 
 ---
 
