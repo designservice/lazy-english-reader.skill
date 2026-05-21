@@ -5,12 +5,4 @@ alwaysApply: false
 
 Use `SKILL.md` in this repository as the workflow spec.
 
-Map the skill's capability names to Cursor tools:
-
-- `Read` / `Write` / `Edit` -> file read/write/edit
-- `Bash` -> terminal commands
-- `Glob` / `Grep` -> file search
-- `AskUserQuestion` -> ask the user in chat
-- `Agent` -> background jobs, worker tasks, or sequential processing if no worker system is available
-
-The Python scripts in `scripts/` are executable helpers. The Markdown files in `templates/` are plain templates. Preserve user-written notes and never overwrite existing Obsidian content unless the workflow explicitly says it is safe.
+For capability-to-tool mapping (Read/Write/Bash/AskUserQuestion/Agent → Cursor tools) and what `{baseDir}` refers to, see `references/agent_adapter.md`.

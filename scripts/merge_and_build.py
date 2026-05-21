@@ -667,12 +667,12 @@ def convert_md_to_html(temp_dir, title, lang_cfg, author=None):
     body_content = body_match.group(1).strip() if body_match else html_content
 
     # Generate book_doc.html with ebook template
-    template_ebook = os.path.join(SCRIPT_DIR, 'template_ebook.html')
+    template_ebook = os.path.join(SCRIPT_DIR, '..', 'templates', 'template_ebook.html')
     book_doc_file = os.path.join(temp_dir, 'book_doc.html')
     apply_template_to_html(body_content, template_ebook, book_doc_file, title, lang_cfg, author)
 
     # Generate book.html with web template
-    template_web = os.path.join(SCRIPT_DIR, 'template.html')
+    template_web = os.path.join(SCRIPT_DIR, '..', 'templates', 'template.html')
     book_file = os.path.join(temp_dir, 'book.html')
     apply_template_to_html(body_content, template_web, book_file, title, lang_cfg, author)
 
@@ -1023,6 +1023,16 @@ def main():
             cleanup_intermediate_files(temp_dir)
         else:
             print("\nSkipping cleanup — some formats failed. Intermediate files kept for diagnosis/retry.")
+
+    # Touch _DONE marker so Phase 6 (postprocess_book.py) and the orchestrating
+    # agent can detect that the background translation pipeline finished.
+    # See SKILL.md Phase 2 / Phase 6 — this is the only reliable completion
+    # signal (don't tail the log, it can be partially-written).
+    if all_formats_ok:
+        done_marker = os.path.join(temp_dir, '_DONE')
+        with open(done_marker, 'w') as f:
+            f.write('Translation pipeline completed successfully.\n')
+        print(f"\n✅ Touched {done_marker} — Phase 6 postprocess can now run.")
 
 
 def cleanup_intermediate_files(temp_dir):
