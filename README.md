@@ -57,7 +57,7 @@ npx skills add designservice/lazy-english-reader.skill
 - 多了一条全本翻译线：英文 PDF 出中文 EPUB / PDF / DOCX，术语在全书内保持一致
 - 多了一条主题归纳线：跨章节抽取人物、概念、方法论，反链回原章节
 - 译文章节和精读笔记用同一份 `.structure.json` 切，两边文件名 1:1 对齐，wikilink 不会断
-- 主对话只跑调度，每章的翻译和精读派给 subagent；处理 130 位工人的《Working》这种长口述史时，主上下文不会被章节正文撑爆
+- 主对话只跑调度，每章的翻译和精读派给 subagent；处理《红楼梦》《西游记》这种几十上百章的大部头时，主上下文不会被章节正文撑爆
 
 ---
 
