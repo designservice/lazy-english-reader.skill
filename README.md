@@ -28,11 +28,11 @@ npx skills add designservice/lazy-english-reader.skill
 
 扔一个 PDF 进去，你可以按需要得到三类产物：
 
-| 产物 | 适合什么时候用 | 你要做的 | AI 在后台跑多久 |
-|------|----------------|----------|----------|
-| 🔁 **全本中文译本** | 想留一份可检索、可导出的中文版本 | 启动后等通知 | 30 min – 2 小时（看书厚度 + 并行度） |
-| 📖 **章节精读笔记** | 想真正读懂每一章，并在 Obsidian 里继续批注 | 启动后按自己节奏读 / 批注 | 每章 1–3 min 生成，整本 < 1 小时 |
-| 🌐 **主题索引** | 读完整本后，按人物、概念、方法论回看全书 | 启动后等通知 | 10–20 min |
+| 你会得到 | 适合场景 | 等待时间 |
+|------|----------------|----------|
+| 🔁 **全本中译** | 想留一份可检索、可导出的中文版本 | 约 30 分钟 – 2 小时 |
+| 📖 **章节精读** | 想真正读懂每一章，并在 Obsidian 里继续批注 | 每章约 1–3 分钟 |
+| 🌐 **主题索引** | 读完整本后，按人物、概念、方法论回看全书 | 约 10–20 分钟 |
 
 章节精读是核心产物：它会生成作者第一人称中文复述、短句中英对照、必要背景补充，以及留给你自己的批注区。
 
@@ -139,7 +139,7 @@ Skill 会一次问完必要参数，比如要生成哪些产物、目标语言�
 
 ## 跨平台
 
-这个 skill 不绑定 Claude Code。仓库里放了几个轻量入口文件，让其他 agent 也能用同一套流程：
+这个 skill 不绑定 Claude Code，也可以在 Codex、Gemini CLI 和 Cursor 里用。
 
 | Agent | 入口文件 |
 |-------|------|
@@ -148,18 +148,7 @@ Skill 会一次问完必要参数，比如要生成哪些产物、目标语言�
 | Gemini CLI | `GEMINI.md` |
 | Cursor | `.cursor/rules/lazy-english-reader.mdc` |
 
-每个入口文件都只有几行，告诉对应 agent 去读 `SKILL.md`。真正的工作流维护在 `SKILL.md` 里。能力名映射（`Bash` / `Read` / `AskUserQuestion` / `Agent` 怎么对应到你这个平台的工具）和 `{baseDir}` 含义统一放在 `references/agent_adapter.md`，所有入口文件都指过去——加新平台时只要复制一个 3 行壳文件，映射表自动复用。
-
-更多 reference 文档（章节标题对齐、写作风格规范、失败处理等）按需加载，平时不进 agent 的 context：
-
-- `references/agent_adapter.md` — 能力名 → 平台工具映射
-- `references/writing_style.md` — 章节笔记写作规则（叙事 / 中文化 / 跨文化术语 / 编辑解读）
-- `references/multi_worker_chapter.md` — 多人多视角章节模板（口述史 / 短篇集 / 散文集）
-- `references/chapters_vs_parts.md` — PDF outline 处理（part 扉页 vs 真章节）
-- `references/troubleshooting.md` — 常见错误恢复
-- `references/translate_prompt.md` — 全本翻译 prompt + 章节标题对齐
-
-`scripts/*.py` 可以直接命令行调用，`templates/*.md` 和 `templates/*.html` 是 Markdown / Pandoc 模板。生成的 `CLAUDE.md` 是这本书的 AI 上下文文件；如果你的 agent 使用 `AGENTS.md`、`GEMINI.md` 或其他约定，可以复用同一份内容。
+开发者文档和适配说明放在 `references/`，脚本和模板分别在 `scripts/`、`templates/`。
 
 ---
 
